@@ -16,8 +16,8 @@
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 
-df_train = pd.read_csv('./data/diabetes_data_train.csv')
-df_test = pd.read_csv('./data/diabetes_data_test.csv')
+df_train = pd.read_csv('diabetes_data_train.csv')
+df_test = pd.read_csv('diabetes_data_test.csv')
 
 X_train = df_train.drop(['status'], axis=1)
 y_train = df_train.status
@@ -73,5 +73,5 @@ X_test = X_test[train_cols]
 train_df = pd.concat([X_train, y_train], axis=1)
 test_df = pd.concat([X_test, y_test], axis=1)
 
-train_df.to_csv('./data/processed_train.csv', index=False)
-test_df.to_csv('./data/processed_test.csv', index=False)
+train_df.to_csv('processed_train.csv', index=False)
+test_df.to_csv('processed_test.csv', index=False)

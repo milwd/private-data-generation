@@ -17,9 +17,9 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-train = pd.read_csv('./data/cs-training.csv')
+train = pd.read_csv('cs-training.csv')
 train = train.dropna()
 train.drop(['Unnamed: 0'], axis=1, inplace=True)
 data_train, data_test = train_test_split(train, test_size=0.25, random_state=42)
-data_train.to_csv('./data/processed_train.csv', index=False)
-data_test.to_csv('./data/processed_test.csv', index=False)
+data_train.to_csv('processed_train.csv', index=False)
+data_test.to_csv('processed_test.csv', index=False)
