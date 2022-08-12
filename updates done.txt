@@ -1,0 +1,30 @@
+
+REQUIREMENTS INSTALL
+
+* problem with several packages' versions (matplotlib, torch, scikit-learn, scipy, pandas) during installation
+command pip install -r requirements.txt
+
+
+DATASETS DOWNLOADS
+
+datasets' keywords (sh download_datasets.sh [keyword]):
+- adult             : adult income dataset (wenruliu)
+- nhanes            : diabetes
+- givemesomecredit  : give me some credit
+- home-credit       : home credit default risk
+- adult-categorical : private pgm - adult
+
+* dataset adult census downloaded properly
+
+* dataset givemesomecredit download forbidden 403, downloaded manually
+(https://www.kaggle.com/datasets/brycecf/give-me-some-credit-dataset)
+
+* dataset home-credit download forbidden 403
+
+* dataset adult-categorical download forbidden 403, downloaded manually
+(https://raw.githubusercontent.com/ryan112358/private-pgm/master/data/adult.csv)
+
+
+
+
+
