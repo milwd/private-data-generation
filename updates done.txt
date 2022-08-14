@@ -25,6 +25,24 @@ datasets' keywords (sh download_datasets.sh [keyword]):
 (https://raw.githubusercontent.com/ryan112358/private-pgm/master/data/adult.csv)
 
 
+What I did:
 
+* implemented time counting for dp-wgan.py in the models folder. It calculates seconds passed each epoch.
+
+first run after files rearrangements:
+python evaluate.py --target-variable='income' --train-data-path=adult_processed_train.csv --test-data-path=adult_processed_test.csv --normalize-data dp-wgan --enable-privacy --sigma=0.8 --target-epsilon=8 --save-synthetic --output-data-path=output/
+time spent : 26.15
+Epoch : 1 Loss D real :  0.009963140392609033 Loss D fake :  0.0106131620453205 Loss G :  0.010644410183716126 Epsilon spent :  1.8095445345590104
+time spent : 28.06
+Epoch : 2 Loss D real :  0.009679974763481631 Loss D fake :  0.010900375391479759 Loss G :  0.010894119226705402 Epsilon spent :  1.9743854312651308
+time spent : 25.91
+Epoch : 3 Loss D real :  0.009518940377765102 Loss D fake :  0.010905056679852483 Loss G :  0.010953811288890026 Epsilon spent :  2.0069468740978853
+^c
+
+- models available on this repository use torch.cuda capability. It will run properly if torch.cuda calls are removed, yet it will be much faster and more reliable if used pytorch with cuda. The "run" folder contains dp-wgan.py file which excludes cuda calls.
+
+- check the installation of nvidia driver
+- install cuda toolkit and configure : https://varhowto.com/install-pytorch-ubuntu-20-04/
+- install pytorch with cuda capability on a new conda environment : https://medium.com/nerd-for-tech/installing-pytorch-with-gpu-support-cuda-in-ubuntu-18-04-complete-guide-edd6d51ee7ab
 
 

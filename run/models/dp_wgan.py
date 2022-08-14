@@ -47,8 +47,8 @@ class DP_WGAN:
     def __init__(self, input_dim, z_dim, target_epsilon, target_delta, conditional=True):
         self.input_dim = input_dim
         self.z_dim = z_dim
-        self.generator = Generator(z_dim, input_dim, conditional).cuda().double()
-        self.discriminator = Discriminator(input_dim, wasserstein=True).cuda().double()
+        self.generator = Generator(z_dim, input_dim, conditional).double()
+        self.discriminator = Discriminator(input_dim, wasserstein=True).double()
         self.generator.apply(weights_init)
         self.discriminator.apply(weights_init)
         self.target_epsilon = target_epsilon
@@ -68,21 +68,21 @@ class DP_WGAN:
         if self.conditional:
             class_ratios = torch.from_numpy(hyperparams.class_ratios)
 
-        data_loader = data_utils.DataLoader(data_utils.TensorDataset(torch.cuda.DoubleTensor(x_train), torch.cuda.DoubleTensor(y_train)),
+        data_loader = data_utils.DataLoader(data_utils.TensorDataset(torch.DoubleTensor(x_train), torch.DoubleTensor(y_train)),
                                             batch_size=batch_size, shuffle=True)
 
         optimizer_g = optim.RMSprop(self.generator.parameters(), lr=lr)
         optimizer_d = optim.RMSprop(self.discriminator.parameters(), lr=lr)
 
-        one = torch.cuda.DoubleTensor([1])
+        one = torch.DoubleTensor([1])
         mone = one * -1
         epsilon = 0
         gen_iters = 0
         steps = 0
         epoch = 0
 
-        t1 = time.time()
-
+        t1 = time.time()        
+        
         while epsilon < self.target_epsilon:
 
             data_iter = iter(data_loader)
@@ -135,7 +135,7 @@ class DP_WGAN:
                         for name, param in self.discriminator.named_parameters():
                             # add noise here
                             param.grad = (clipped_grads[name] + torch.DoubleTensor(
-                                clipped_grads[name].size()).normal_(0, sigma * clip_coeff).cuda()) / (
+                                clipped_grads[name].size()).normal_(0, sigma * clip_coeff)) / (
                                                      err_d_real.size(0) / micro_batch_size)
 
                         steps += 1
@@ -144,9 +144,9 @@ class DP_WGAN:
                         err_d_real.mean(0).view(1).backward(one)
 
                     # train with fake
-                    noise = torch.randn(batch_size, self.z_dim).cuda()
+                    noise = torch.randn(batch_size, self.z_dim)
                     if self.conditional:
-                        category = torch.multinomial(class_ratios,  batch_size, replacement=True).unsqueeze(1).cuda().double()
+                        category = torch.multinomial(class_ratios,  batch_size, replacement=True).unsqueeze(1).double()
                         fake = self.generator(torch.cat([noise.double(), category], dim=1))
                         err_d_fake = self.discriminator(torch.cat([fake.detach(), category], dim=1)).mean(0).view(1)
 
@@ -161,9 +161,9 @@ class DP_WGAN:
                     p.requires_grad = False
 
                 optimizer_g.zero_grad()
-                noise = torch.randn(batch_size, self.z_dim).cuda()
+                noise = torch.randn(batch_size, self.z_dim)
                 if self.conditional:
-                    category = torch.multinomial(class_ratios,  batch_size, replacement=True).unsqueeze(1).cuda().double()
+                    category = torch.multinomial(class_ratios,  batch_size, replacement=True).unsqueeze(1).double()
                     fake = self.generator(torch.cat([noise.double(), category], dim=1))
                     err_g = self.discriminator(torch.cat([fake, category.double()], dim=1)).mean(0).view(1)
                 else:
@@ -183,7 +183,7 @@ class DP_WGAN:
             else:
                 if epoch > hyperparams.num_epochs:
                     epsilon = np.inf
-            
+
             print("time spent : ", round(time.time()-t1, 2))
             print("Epoch :", epoch, "Loss D real : ", err_d_real.mean(0).view(1).item(),
                   "Loss D fake : ", err_d_fake.item(), "Loss G : ", err_g.item(), "Epsilon spent : ", epsilon)
@@ -195,9 +195,9 @@ class DP_WGAN:
         if self.conditional:
             class_ratios = torch.from_numpy(class_ratios)
         for step in range(steps):
-            noise = torch.randn(batch_size, self.z_dim).cuda()
+            noise = torch.randn(batch_size, self.z_dim)
             if self.conditional:
-                cat = torch.multinomial(class_ratios,  batch_size, replacement=True).unsqueeze(1).cuda().double()
+                cat = torch.multinomial(class_ratios,  batch_size, replacement=True).unsqueeze(1).double()
                 synthetic = self.generator(torch.cat([noise.double(), cat], dim=1))
                 synthetic = torch.cat([synthetic, cat], dim=1)
 
@@ -207,10 +207,10 @@ class DP_WGAN:
             synthetic_data.append(synthetic.cpu().data.numpy())
 
         if steps*batch_size < num_rows:
-            noise = torch.randn(num_rows - steps*batch_size, self.z_dim).cuda()
+            noise = torch.randn(num_rows - steps*batch_size, self.z_dim)
 
             if self.conditional:
-                cat = torch.multinomial(class_ratios, num_rows - steps*batch_size, replacement=True).unsqueeze(1).cuda().double()
+                cat = torch.multinomial(class_ratios, num_rows - steps*batch_size, replacement=True).unsqueeze(1).double()
                 synthetic = self.generator(torch.cat([noise.double(), cat], dim=1))
                 synthetic = torch.cat([synthetic, cat], dim=1)
             else:
