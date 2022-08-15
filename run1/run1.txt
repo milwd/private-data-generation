@@ -576,3 +576,4 @@ GaussianNB: 0.2524710520091634
 ----------------------------------------
 GradientBoostingClassifier: 0.47386886678070655
 Saved synthetic data at :  output/
+
