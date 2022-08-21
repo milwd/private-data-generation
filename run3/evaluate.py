@@ -19,6 +19,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier,
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
 from sklearn.naive_bayes import GaussianNB
+from sklearn import svm
 from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn import preprocessing
 from scipy.special import expit
@@ -33,6 +34,8 @@ try:
     from models.IMLE import imle
 except ImportError as error:
     pass
+
+import pickle
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--categorical', action='store_true', help='All attributes of the data are categorical with small domains')
@@ -208,19 +211,26 @@ elif opt.model == 'private-pgm':
     syn_data = model.generate()
     X_syn, y_syn = syn_data[:, :-1], syn_data[:, -1]
 
-# Testing the quality of synthetic data by training and testing the downstream learners
 
+# saving the model trained for further use
+if opt.model != 'real-data':
+    print("saving trained model ", opt.model, " ...")
+    pickle.dump(model, open(str(opt.model)+".pkl", 'wb'))
+    print("model " + opt.model + " saved!")
+
+# Testing the quality of synthetic data by training and testing the downstream learners
 # Creating downstream learners
 learners = []
 
 if opt.downstream_task == "classification":
-    names = ['LR', 'Random Forest', 'Neural Network', 'GaussianNB', 'GradientBoostingClassifier']
+    names = ['LR', 'Random Forest', 'Neural Network', 'GaussianNB', 'GradientBoostingClassifier', 'SVM - linear SVC']
 
     learners.append((LogisticRegression()))
     learners.append((RandomForestClassifier()))
     learners.append((MLPClassifier(early_stopping=True)))
     learners.append((GaussianNB()))
     learners.append((GradientBoostingClassifier()))
+    learners.append((svm.LinearSVC()))
 
     print("AUC scores of downstream classifiers on test data : ")
     for i in range(0, len(learners)):
