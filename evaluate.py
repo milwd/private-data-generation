@@ -241,8 +241,8 @@ else:
 
     print("RMSE scores of downstream regressors on test data : ")
     for i in range(0, len(learners)):
-        score = learners[i].fit(X_syn, y_syn)
-        pred_vals = learners[i].predict(X_test)
+        scorer = learners[i].fit(X_syn, y_syn)
+        pred_vals = scorer.predict(X_test)
         rmse = np.sqrt(mean_squared_error(y_test, pred_vals))
         print('-' * 40)
         print('{0}: {1}'.format(names[i], rmse))
