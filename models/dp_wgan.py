@@ -37,8 +37,9 @@ import torch.optim as optim
 import torch.utils.data as data_utils
 import numpy as np
 from utils.rdp_accountant import compute_rdp, get_privacy_spent
-from utils.architectures import Generator, Discriminator
-from utils.helper import weights_init
+from utils.architectures import NewGenerator as Generator 
+from utils.architectures import NewDiscriminator as Discriminator
+from utils.helper import weights_init, concat_and_get_accuracy
 
 import time
 
@@ -55,7 +56,7 @@ class DP_WGAN:
         self.target_delta = target_delta
         self.conditional = conditional
 
-    def train(self, x_train, y_train, hyperparams, private=False):
+    def train(self, x_train, y_train, x_test, y_test, hyperparams, private=False):
         batch_size = hyperparams.batch_size
         micro_batch_size = hyperparams.micro_batch_size
         lr = hyperparams.lr
@@ -64,6 +65,8 @@ class DP_WGAN:
         clip_coeff = hyperparams.clip_coeff
         sigma = hyperparams.sigma
         class_ratios = None
+
+        accuracies = []
 
         if self.conditional:
             class_ratios = torch.from_numpy(hyperparams.class_ratios)
@@ -87,6 +90,8 @@ class DP_WGAN:
 
             data_iter = iter(data_loader)
             i = 0
+
+            epoch_generated = []
 
             while i < len(data_loader):
 
@@ -165,15 +170,22 @@ class DP_WGAN:
                 if self.conditional:
                     category = torch.multinomial(class_ratios,  batch_size, replacement=True).unsqueeze(1).cuda().double()
                     fake = self.generator(torch.cat([noise.double(), category], dim=1))
-                    err_g = self.discriminator(torch.cat([fake, category.double()], dim=1)).mean(0).view(1)
+                    fake_with_label = torch.cat([fake, category.double()], dim=1)
+                    err_g = self.discriminator(fake_with_label).mean(0).view(1)
+                    epoch_generated.append(fake_with_label.cpu().data.numpy())
                 else:
                     fake = self.generator(noise.double())
                     err_g = self.discriminator(fake).mean(0).view(1)
+                    epoch_generated.append(fake.cpu().data.numpy())
                 err_g.backward(one)
                 optimizer_g.step()
                 gen_iters += 1
 
             epoch += 1
+
+            accuracy = concat_and_get_accuracy(epoch_generated, x_test, y_test, self.conditional, None)
+            accuracies.append(accuracy)
+
             if private:
                 # Calculate the current privacy cost using the accountant
                 max_lmbd = 4095
@@ -185,9 +197,10 @@ class DP_WGAN:
                     epsilon = np.inf
             
             print("time spent : ", round(time.time()-t1, 2))
-            print("Epoch :", epoch, "Loss D real : ", err_d_real.mean(0).view(1).item(),
+            print("Epoch :", epoch, "Accuracy : ", accuracy, "Loss D real : ", err_d_real.mean(0).view(1).item(),
                   "Loss D fake : ", err_d_fake.item(), "Loss G : ", err_g.item(), "Epsilon spent : ", epsilon)
             t1 = time.time()
+        return accuracies
             
     def generate(self, num_rows, class_ratios, batch_size=1000):
         steps = num_rows // batch_size

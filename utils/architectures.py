@@ -33,6 +33,28 @@ class Generator(nn.Module):
     def forward(self, x):
         return self.main(x)
 
+class NewGenerator(nn.Module):
+    def __init__(self, latent_size, output_size, conditional=True):
+        super().__init__()
+        z = latent_size
+        d = output_size
+        if conditional:
+            z = z + 1
+        else:
+            d = d + 1
+        self.main = nn.Sequential(
+            nn.Linear(z, 512),
+            nn.LeakyReLU(),
+            nn.Linear(512, 512),
+            nn.LeakyReLU(),
+            nn.Linear(512, 512),
+            nn.LeakyReLU(),
+            nn.Linear(512, d)
+            )
+
+    def forward(self, x):
+        return self.main(x)
+
 
 class Discriminator(nn.Module):
     def __init__(self, input_size, wasserstein=False):
@@ -41,6 +63,26 @@ class Discriminator(nn.Module):
             nn.Linear(input_size + 1, int(input_size / 2)),
             nn.ReLU(),
             nn.Linear(int(input_size / 2), 1))
+
+        if not wasserstein:
+            self.main.add_module(str(3), nn.Sigmoid())
+
+    def forward(self, x):
+        return self.main(x)
+
+
+class NewDiscriminator(nn.Module):
+    def __init__(self, input_size, wasserstein=False):
+        super().__init__()
+        self.main = nn.Sequential(
+            nn.Linear(input_size + 1, 512),
+            nn.LeakyReLU(),
+            nn.Linear(512, 512),
+            nn.LeakyReLU(),
+            nn.Linear(512, 512),
+            nn.LeakyReLU(),
+            nn.Linear(512, 1)
+        )
 
         if not wasserstein:
             self.main.add_module(str(3), nn.Sigmoid())

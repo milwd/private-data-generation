@@ -18,7 +18,8 @@ import torch.nn as nn
 import math
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mutual_info_score
+from sklearn.metrics import mutual_info_score, roc_auc_score, mean_squared_error
+from sklearn.ensemble import RandomForestClassifier
 
 
 def weights_init(m):
@@ -78,3 +79,16 @@ def normalize_given_distribution(frequencies):
             return distribution / summation
     else:
         return np.full_like(distribution, 1 / distribution.size)
+
+
+def concat_and_get_accuracy(epoch_generated, x_test, y_test, conditional, score_model):
+    # score model is the model for classification/regression : NOT YET IMPLEMENTED
+    if conditional:
+        epoch_generated = np.concatenate(epoch_generated)
+        classifier = RandomForestClassifier().fit(epoch_generated[:, :-1], epoch_generated[:, -1])
+        pred_probs = classifier.predict_proba(x_test)
+        auc_score = roc_auc_score(y_test, pred_probs[:, 1])
+        return round(auc_score, 5)
+    else:
+        print("each epoch accuracy for regression is not yet implemented!")
+        return None

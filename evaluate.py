@@ -24,15 +24,17 @@ from sklearn import preprocessing
 from scipy.special import expit
 from models import dp_wgan, pate_gan, ron_gauss
 from models.Private_PGM import private_pgm
+try:
+    from models.IMLE import imle
+except ImportError as error:
+    pass
 import argparse
 import numpy as np
 import pandas as pd
 import collections
 import os
-try:
-    from models.IMLE import imle
-except ImportError as error:
-    pass
+import pickle
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--categorical', action='store_true', help='All attributes of the data are categorical with small domains')
@@ -139,9 +141,12 @@ if opt.model == 'pate-gan':
     Hyperparams.__new__.__defaults__ = (None, None, None, None, None, None, None)
 
     model = pate_gan.PATE_GAN(input_dim, z_dim, opt.num_teachers, opt.target_epsilon, opt.target_delta, conditional)
-    model.train(X_train, y_train, Hyperparams(batch_size=opt.batch_size, num_teacher_iters=opt.teacher_iters,
+    accuracies = model.train(X_train, y_train, X_test, y_test, Hyperparams(batch_size=opt.batch_size, num_teacher_iters=opt.teacher_iters,
                                               num_student_iters=opt.student_iters, num_moments=opt.num_moments,
                                               lap_scale=opt.lap_scale, class_ratios=class_ratios, lr=1e-4))
+
+    with open('PATE-GAN Accuracies.pkl', 'wb') as f:
+        pickle.dump(accuracies, f)
 
 elif opt.model == 'dp-wgan':
     Hyperparams = collections.namedtuple(
@@ -150,12 +155,17 @@ elif opt.model == 'dp-wgan':
     Hyperparams.__new__.__defaults__ = (None, None, None, None, None, None, None, None, None)
 
     model = dp_wgan.DP_WGAN(input_dim, z_dim, opt.target_epsilon, opt.target_delta, conditional)
-    model.train(X_train, y_train, Hyperparams(batch_size=opt.batch_size, micro_batch_size=opt.micro_batch_size,
+    accuracies = model.train(X_train, y_train, X_test, y_test, Hyperparams(batch_size=opt.batch_size, micro_batch_size=opt.micro_batch_size,
                                               clamp_lower=opt.clamp_lower, clamp_upper=opt.clamp_upper,
                                               clip_coeff=opt.clip_coeff, sigma=opt.sigma, class_ratios=class_ratios, lr=
                                               5e-5, num_epochs=opt.num_epochs), private=opt.enable_privacy)
 
+    with open('DP-WGAN Accuracies.pkl', 'wb') as f:
+        pickle.dump(accuracies, f)
+
+
 elif opt.model == 'ron-gauss':
+    print()
     model = ron_gauss.RONGauss(z_dim, opt.target_epsilon, opt.target_delta, conditional)
 
 elif opt.model == 'imle':

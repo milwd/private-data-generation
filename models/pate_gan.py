@@ -19,8 +19,10 @@ import torch.optim as optim
 import torch.utils.data as data_utils
 import numpy as np
 import math
-from utils.architectures import Generator, Discriminator
-from utils.helper import weights_init, pate, moments_acc
+# from utils.architectures import Generator, Discriminator
+from utils.architectures import NewGenerator as Generator 
+from utils.architectures import NewDiscriminator as Discriminator
+from utils.helper import weights_init, pate, moments_acc, concat_and_get_accuracy
 
 
 class PATE_GAN:
@@ -40,13 +42,16 @@ class PATE_GAN:
         self.target_delta = target_delta
         self.conditional = conditional
 
-    def train(self, x_train, y_train, hyperparams):
+    def train(self, x_train, y_train, x_test, y_test, hyperparams):
         batch_size = hyperparams.batch_size
         num_teacher_iters = hyperparams.num_teacher_iters
         num_student_iters = hyperparams.num_student_iters
         num_moments = hyperparams.num_moments
         lap_scale = hyperparams.lap_scale
         class_ratios = None
+
+        accuracies = []
+
         if self.conditional:
             class_ratios = torch.from_numpy(hyperparams.class_ratios)
 
@@ -77,6 +82,8 @@ class PATE_GAN:
         epsilon = 0
 
         while epsilon < self.target_epsilon:
+
+            epoch_generated = []
 
             # train the teacher discriminators
             for t_2 in range(num_teacher_iters):
@@ -145,23 +152,31 @@ class PATE_GAN:
             if self.conditional:
                 category = torch.multinomial(class_ratios,  inputs.size()[0], replacement=True).unsqueeze(1).cuda().double()
                 fake = self.generator(torch.cat([z.double(), category], dim=1))
-                output = self.student_disc(torch.cat([fake, category.double()], dim=1))
+                fake_with_label = torch.cat([fake, category.double()], dim=1)
+                output = self.student_disc(fake_with_label)
+                epoch_generated.append(fake_with_label.cpu().data.numpy())
             else:
                 fake = self.generator(z.double())
                 output = self.student_disc.forward(fake)
+                epoch_generated.append(fake.cpu().data.numpy())
+
             label = label.unsqueeze(1)
             label = label.double()
             err_g = criterion(output, label)
             err_g.backward()
             optimizer_g.step()
 
+            accuracy = concat_and_get_accuracy(epoch_generated, x_test, y_test, self.conditional, None)
+            accuracies.append(accuracy)
+
             # Calculate the current privacy cost
             epsilon = min((alpha - math.log(self.target_delta)) / l_list)
             if steps % 100 == 0:
-                print("Step : ", steps, "Loss SD : ", err_sd.item(), "Loss G : ", err_g.item(), "Epsilon : ",
+                print("Step : ", steps, "Accuracy : ", accuracy, "Loss SD : ", err_sd.item(), "Loss G : ", err_g.item(), "Epsilon : ",
                       epsilon.item())
 
             steps += 1
+        return accuracies
 
     def generate(self, num_rows, class_ratios, batch_size=1000):
         steps = num_rows // batch_size
